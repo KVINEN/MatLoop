@@ -14,14 +14,42 @@ export function serialize(data: AppData): string {
   return JSON.stringify({ version: VERSION, ...data });
 }
 
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+const isName = (v: unknown): v is string => typeof v === "string" && v.trim() !== "";
+
+/** Returns why the document isn't valid v1 data, or null if it is. */
+function invalidReason(doc: unknown): string | null {
+  if (!isRecord(doc)) return "not an object";
+  if (doc.version !== VERSION) return `version ${String(doc.version)}`;
+  if (!isRecord(doc.menus)) return "menus is not an object";
+  for (const [key, week] of Object.entries(doc.menus)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return `menu key ${key}`;
+    if (!Array.isArray(week) || week.length !== 7 || !week.every((d) => typeof d === "string")) return `menu ${key}`;
+  }
+  if (!Array.isArray(doc.shopping) || !Array.isArray(doc.pantry)) return "shopping or pantry is not a list";
+  // Pantry entries keep their shopping row's id, so ids are unique across both lists.
+  const ids = new Set<unknown>();
+  for (const row of [...doc.shopping, ...doc.pantry]) {
+    if (!isRecord(row) || typeof row.id !== "string" || row.id === "" || !isName(row.name)) return "invalid item";
+    if (ids.has(row.id)) return `duplicate id ${row.id}`;
+    ids.add(row.id);
+  }
+  if (!doc.shopping.every((row) => typeof row.bought === "boolean")) return "invalid bought flag";
+  return null;
+}
+
 /** Parses the stored document. Throws on anything unrecognised so callers never replace it with empty data. */
 export function parse(raw: string | null): AppData {
   if (raw === null) return emptyData;
   const doc = JSON.parse(raw);
-  if (doc?.version !== VERSION || !Array.isArray(doc.shopping) || !Array.isArray(doc.pantry) || typeof doc.menus !== "object") {
-    throw new Error(`Unrecognised saved data (version ${String(doc?.version)})`);
-  }
-  return { menus: doc.menus, shopping: doc.shopping, pantry: doc.pantry };
+  const reason = invalidReason(doc);
+  if (reason !== null) throw new Error(`Unrecognised saved data (${reason})`);
+  const { menus, shopping, pantry } = doc as AppData;
+  return {
+    menus,
+    shopping: shopping.map(({ id, name, bought }) => ({ id, name, bought })),
+    pantry: pantry.map(({ id, name }) => ({ id, name })),
+  };
 }
 
 function message(error: unknown): string {

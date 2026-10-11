@@ -9,7 +9,7 @@ The app bridges the gap between your meal plan, the grocery store, and your pant
 
 v1 is a local, single-device version of the loop:
 
-- **Home**: this week's dinners (ISO week, Monday–Sunday). One free-text dinner per day; tap away or press Enter to save, ✕ to clear. Earlier weeks stay saved; only the current week is shown.
+- **Home**: this week's dinners (ISO week, Monday–Sunday). One free-text dinner per day, saved as you type; ✕ clears it. Earlier weeks stay saved; only the current week is shown.
 - **Shopping**: add named items (duplicates are fine), tick them off as you shop, then **Finish shopping** to move the ticked items to the pantry.
 - **Pantry**: everything you've bought. Remove an entry when it's used, eaten or spoiled.
 
@@ -24,4 +24,5 @@ npm start           # Expo dev server
 npm run typecheck   # tsc --noEmit
 npm test            # week + shopping-transfer + persistence checks (node --test)
 npx expo export --platform web
+scripts/android-week-rollover.sh exp://<host>:8081   # midnight/resume refresh on a rooted Android emulator (changes its clock)
 ```

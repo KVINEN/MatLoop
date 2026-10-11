@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useHeaderHeight } from "expo-router/react-navigation";
 
 import { Button, colors, SaveErrorBanner } from "@/components/ui";
 import { dateKey, isoWeek, weekDays } from "@/domain/week";
@@ -13,10 +14,12 @@ const shortDate = (d: Date) => `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 
 function DinnerRow({ label, value, onSave }: { label: string; value: string; onSave: (text: string) => void }) {
   const [draft, setDraft] = useState(value);
-  const commit = () => {
-    if (draft.trim() !== value) onSave(draft);
-    setDraft(draft.trim());
+  // Save on every change: Android never blurs the input when the app is left mid-edit.
+  const change = (text: string) => {
+    setDraft(text);
+    if (text.trim() !== value) onSave(text);
   };
+  const commit = () => setDraft(draft.trim());
   return (
     <View style={styles.row}>
       <Text style={styles.day}>{label}</Text>
@@ -24,7 +27,7 @@ function DinnerRow({ label, value, onSave }: { label: string; value: string; onS
         <TextInput
           style={styles.input}
           value={draft}
-          onChangeText={setDraft}
+          onChangeText={change}
           onBlur={commit}
           onSubmitEditing={commit}
           placeholder="What's for dinner?"
@@ -52,6 +55,7 @@ function DinnerRow({ label, value, onSave }: { label: string; value: string; onS
 }
 
 export default function HomeScreen() {
+  const headerHeight = useHeaderHeight();
   const router = useRouter();
   const today = useToday();
   const { data, setDinner } = useShoppingStore();
@@ -61,7 +65,8 @@ export default function HomeScreen() {
   const menu = data.menus[weekKey] ?? [];
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior="padding">
+    // KeyboardAvoidingView compares its in-parent frame with the on-screen keyboard, so offset by the header above it.
+    <KeyboardAvoidingView style={styles.flex} behavior="padding" keyboardVerticalOffset={headerHeight}>
       <SaveErrorBanner />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title} accessibilityRole="header">

@@ -71,3 +71,32 @@ test("unreadable data is rejected, not replaced", async () => {
   await sleep(5);
   assert.equal(store.get(STORAGE_KEY), "{not json");
 });
+
+test("malformed v1 documents are rejected and the raw document is kept", async () => {
+  const valid = { version: 1, menus: { "2026-10-05": ["Taco", "", "", "", "", "", ""] }, shopping: [{ id: "1", name: "Milk", bought: false }], pantry: [{ id: "2", name: "Bread" }] };
+  assert.deepEqual(parse(JSON.stringify(valid)), { menus: valid.menus, shopping: valid.shopping, pantry: valid.pantry });
+  const malformed: Record<string, unknown> = {
+    "null menus": { ...valid, menus: null },
+    "array menus": { ...valid, menus: [] },
+    "short week": { ...valid, menus: { "2026-10-05": ["Taco"] } },
+    "non-string dinner": { ...valid, menus: { "2026-10-05": [1, "", "", "", "", "", ""] } },
+    "bad menu key": { ...valid, menus: { monday: Array(7).fill("") } },
+    "null row": { ...valid, shopping: [null] },
+    "string bought": { ...valid, shopping: [{ id: "1", name: "Milk", bought: "false" }] },
+    "missing bought": { ...valid, shopping: [{ id: "1", name: "Milk" }] },
+    "blank name": { ...valid, pantry: [{ id: "2", name: "  " }] },
+    "numeric id": { ...valid, pantry: [{ id: 2, name: "Bread" }] },
+    "duplicate shopping ids": { ...valid, shopping: [{ id: "1", name: "Milk", bought: false }, { id: "1", name: "Eggs", bought: true }] },
+    "id in both lists": { ...valid, pantry: [{ id: "1", name: "Milk" }] },
+  };
+  for (const [label, doc] of Object.entries(malformed)) {
+    const raw = JSON.stringify(doc);
+    assert.throws(() => parse(raw), /Unrecognised saved data/, label);
+    const { storage, store } = fakeStorage(raw);
+    const p = createPersistence(storage, () => {});
+    await assert.rejects(p.load(), label);
+    p.save(emptyData);
+    await sleep(1);
+    assert.equal(store.get(STORAGE_KEY), raw, label);
+  }
+});

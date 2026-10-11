@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FlatList, KeyboardAvoidingView, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useHeaderHeight } from "expo-router/react-navigation";
 
 import { Button, colors, EmptyState, SaveErrorBanner } from "@/components/ui";
 import type { ShoppingItem } from "@/domain/types";
@@ -27,6 +28,7 @@ function ItemRow({ item, onToggle, onRemove }: { item: ShoppingItem; onToggle: (
 }
 
 export default function ShoppingScreen() {
+  const headerHeight = useHeaderHeight();
   const { data, lastMoved, addItem, toggleItem, removeItem, finishShopping } = useShoppingStore();
   const [name, setName] = useState("");
   const [invalid, setInvalid] = useState(false);
@@ -42,7 +44,8 @@ export default function ShoppingScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior="padding">
+    // KeyboardAvoidingView compares its in-parent frame with the on-screen keyboard, so offset by the header above it.
+    <KeyboardAvoidingView style={styles.flex} behavior="padding" keyboardVerticalOffset={headerHeight}>
       <SaveErrorBanner />
       <View style={styles.addRow}>
         <TextInput
