@@ -1,7 +1,8 @@
+import { seedRecipes } from "./recipes.ts";
 import { emptyData, type AppData } from "./types.ts";
 
 export const STORAGE_KEY = "matloop:data";
-const VERSION = 1;
+const VERSION = 2;
 
 export type KeyValueStorage = {
   getItem(key: string): Promise<string | null>;
@@ -17,10 +18,9 @@ export function serialize(data: AppData): string {
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const isName = (v: unknown): v is string => typeof v === "string" && v.trim() !== "";
 
-/** Returns why the document isn't valid v1 data, or null if it is. */
+/** Returns why the document isn't valid v1 data (menus, shopping, pantry), or null if it is. */
 function invalidReason(doc: unknown): string | null {
   if (!isRecord(doc)) return "not an object";
-  if (doc.version !== VERSION) return `version ${String(doc.version)}`;
   if (!isRecord(doc.menus)) return "menus is not an object";
   for (const [key, week] of Object.entries(doc.menus)) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return `menu key ${key}`;
@@ -38,17 +38,33 @@ function invalidReason(doc: unknown): string | null {
   return null;
 }
 
-/** Parses the stored document. Throws on anything unrecognised so callers never replace it with empty data. */
+/** Recipe ids are their own namespace, separate from shopping and pantry ids. */
+function invalidRecipes(recipes: unknown): string | null {
+  if (!Array.isArray(recipes)) return "recipes is not a list";
+  const ids = new Set<string>();
+  for (const r of recipes) {
+    if (!isRecord(r) || !isName(r.id) || !isName(r.title) || !isName(r.ingredients) || !isName(r.steps)) return "invalid recipe";
+    if (ids.has(r.id)) return `duplicate recipe id ${r.id}`;
+    ids.add(r.id);
+  }
+  return null;
+}
+
+/** Parses the stored document (v1 is upgraded). Throws on anything unrecognised so callers never replace it with empty data. */
 export function parse(raw: string | null): AppData {
-  if (raw === null) return emptyData;
+  if (raw === null) return { ...emptyData, recipes: seedRecipes };
   const doc = JSON.parse(raw);
-  const reason = invalidReason(doc);
+  const version = isRecord(doc) ? doc.version : undefined;
+  if (version !== 1 && version !== VERSION) throw new Error(`Unrecognised saved data (version ${String(version)})`);
+  const reason = invalidReason(doc) ?? (version === VERSION ? invalidRecipes((doc as Record<string, unknown>).recipes) : null);
   if (reason !== null) throw new Error(`Unrecognised saved data (${reason})`);
-  const { menus, shopping, pantry } = doc as AppData;
+  const { menus, shopping, pantry, recipes } = doc as AppData;
   return {
     menus,
     shopping: shopping.map(({ id, name, bought }) => ({ id, name, bought })),
     pantry: pantry.map(({ id, name }) => ({ id, name })),
+    // v1 predates recipes: it gets the seeds once, on upgrade. v2 recipes are used as stored, even when empty.
+    recipes: version === 1 ? seedRecipes : recipes.map(({ id, title, ingredients, steps }) => ({ id, title, ingredients, steps })),
   };
 }
 

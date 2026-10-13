@@ -1,4 +1,4 @@
-import type { AppData, WeekMenu } from "./types.ts";
+import type { AppData, Recipe, WeekMenu } from "./types.ts";
 
 export type Action =
   | { type: "setDinner"; weekKey: string; day: number; text: string }
@@ -6,7 +6,8 @@ export type Action =
   | { type: "removeItem"; id: string }
   | { type: "toggleItem"; id: string }
   | { type: "finishShopping" }
-  | { type: "removePantry"; id: string };
+  | { type: "removePantry"; id: string }
+  | { type: "addRecipe"; id: string; title: string; ingredients: string; steps: string };
 
 /** Trimmed item name, or null if nothing is left. */
 export function normalizeName(name: string): string | null {
@@ -26,6 +27,14 @@ export function finishShopping(data: AppData): { data: AppData; moved: number } 
     },
     moved: bought.length,
   };
+}
+
+/** Trimmed recipe fields (internal line breaks kept), or null if any field is blank. */
+export function normalizeRecipe(input: { title: string; ingredients: string; steps: string }): Omit<Recipe, "id"> | null {
+  const title = normalizeName(input.title);
+  const ingredients = normalizeName(input.ingredients);
+  const steps = normalizeName(input.steps);
+  return title === null || ingredients === null || steps === null ? null : { title, ingredients, steps };
 }
 
 export function reduce(data: AppData, action: Action): AppData {
@@ -53,6 +62,11 @@ export function reduce(data: AppData, action: Action): AppData {
       return finishShopping(data).data;
     case "removePantry":
       return { ...data, pantry: data.pantry.filter((entry) => entry.id !== action.id) };
+    case "addRecipe": {
+      const recipe = normalizeRecipe(action);
+      if (recipe === null) return data;
+      return { ...data, recipes: [...data.recipes, { id: action.id, ...recipe }] };
+    }
   }
 }
 
