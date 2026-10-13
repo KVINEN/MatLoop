@@ -1,6 +1,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import { createPersistence, parse, serialize, STORAGE_KEY, type KeyValueStorage, type SaveState } from "./persist.ts";
+import { seedRecipes } from "./recipes.ts";
 import { emptyData, type AppData } from "./types.ts";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -74,7 +75,7 @@ test("unreadable data is rejected, not replaced", async () => {
 
 test("malformed v1 documents are rejected and the raw document is kept", async () => {
   const valid = { version: 1, menus: { "2026-10-05": ["Taco", "", "", "", "", "", ""] }, shopping: [{ id: "1", name: "Milk", bought: false }], pantry: [{ id: "2", name: "Bread" }] };
-  assert.deepEqual(parse(JSON.stringify(valid)), { menus: valid.menus, shopping: valid.shopping, pantry: valid.pantry });
+  assert.deepEqual(parse(JSON.stringify(valid)), { menus: valid.menus, shopping: valid.shopping, pantry: valid.pantry, recipes: seedRecipes });
   const malformed: Record<string, unknown> = {
     "null menus": { ...valid, menus: null },
     "array menus": { ...valid, menus: [] },

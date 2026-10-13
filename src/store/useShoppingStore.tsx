@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, use, useCallback, useEffect, useReducer, useState, type ReactNode } from "react";
 
 import { createPersistence, type SaveState } from "@/domain/persist";
-import { finishShopping, newId, normalizeName, reduce, type Action } from "@/domain/state";
+import { finishShopping, newId, normalizeName, normalizeRecipe, reduce, type Action } from "@/domain/state";
 import { emptyData, type AppData } from "@/domain/types";
 
 type StoreState = {
@@ -42,6 +42,8 @@ type Store = {
   toggleItem: (id: string) => void;
   finishShopping: () => void;
   removePantry: (id: string) => void;
+  /** Returns false when any field is blank. */
+  addRecipe: (input: { title: string; ingredients: string; steps: string }) => boolean;
 };
 
 const StoreContext = createContext<Store | null>(null);
@@ -87,6 +89,11 @@ export function ShoppingStoreProvider({ children }: { children: ReactNode }) {
     toggleItem: (id) => dispatch({ type: "toggleItem", id }),
     finishShopping: () => dispatch({ type: "finishShopping" }),
     removePantry: (id) => dispatch({ type: "removePantry", id }),
+    addRecipe: ({ title, ingredients, steps }) => {
+      if (normalizeRecipe({ title, ingredients, steps }) === null) return false;
+      dispatch({ type: "addRecipe", id: newId(), title, ingredients, steps });
+      return true;
+    },
   };
 
   return <StoreContext value={store}>{children}</StoreContext>;
