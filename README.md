@@ -26,3 +26,25 @@ npm test            # week + shopping-transfer + persistence checks (node --test
 npx expo export --platform web
 scripts/android-week-rollover.sh exp://<host>:8081   # midnight/resume refresh on a rooted Android emulator (changes its clock)
 ```
+
+### Automatic checks (GitHub Actions)
+`.github/workflows/checks.yml` runs on pull requests, pushes to `main` and manual dispatch, in one Ubuntu job with Node 26.8.2 and a read-only token. It runs the same commands you can run locally:
+
+```bash
+npm ci
+npm test
+npm run typecheck
+EXPO_NO_DOTENV=1 npx expo export --platform web   # no .env or secrets needed
+```
+
+This covers the domain logic tests, TypeScript and that the web bundle builds. It does **not** validate Android or iOS: a web export says nothing about native behaviour or keyboards. The workflow has no secrets, builds, signing or deployment, and no lint step (no linter is configured).
+
+### Manual native checks
+Before relying on a change, run `npx expo start --android` (or Expo Go on a device) and check:
+
+- **Dinners**: type a dinner for a day, confirm it saves as you type and ✕ clears it; the on-screen keyboard doesn't hide the field.
+- **Shopping transfer**: add items, tick some, **Finish shopping**; ticked items move to the pantry, unticked stay.
+- **Pantry**: entries appear after shopping and can be removed.
+- **Recipes**: once the recipe feature is merged, create, search and pick a recipe for a dinner.
+
+iOS is unverified until an iPhone is available.
