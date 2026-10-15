@@ -1,5 +1,11 @@
 import type { Recipe } from "./types.ts";
 
+/** Recipes whose title contains the query (trimmed, case-insensitive), in collection order. A blank query returns all. */
+export function searchRecipes(recipes: Recipe[], query: string): Recipe[] {
+  const needle = query.trim().toLowerCase();
+  return needle === "" ? recipes : recipes.filter((recipe) => recipe.title.toLowerCase().includes(needle));
+}
+
 /** Mock recipes given to a fresh install or a v1 upgrade. */
 export const seedRecipes: Recipe[] = [
   {
