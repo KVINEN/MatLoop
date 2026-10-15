@@ -1,9 +1,10 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { FlatList, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useHeaderHeight } from "expo-router/react-navigation";
 
-import { Button, colors, SaveErrorBanner } from "@/components/ui";
+import { Button, colors, EmptyState, SaveErrorBanner } from "@/components/ui";
+import { searchRecipes } from "@/domain/recipes";
 import { dateKey, isoWeek, weekDays } from "@/domain/week";
 import { useToday } from "@/hooks/useToday";
 import { useShoppingStore } from "@/store/useShoppingStore";
@@ -12,8 +13,52 @@ const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satu
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const shortDate = (d: Date) => `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 
-function DinnerRow({ label, value, onSave }: { label: string; value: string; onSave: (text: string) => void }) {
+function RecipePicker({ dayLabel, onChoose, onCancel }: { dayLabel: string; onChoose: (title: string) => void; onCancel: () => void }) {
+  const { data } = useShoppingStore();
+  const [query, setQuery] = useState("");
+  const results = searchRecipes(data.recipes, query);
+  return (
+    <Modal visible animationType="slide" onRequestClose={onCancel}>
+      <View style={styles.pickerScreen}>
+        <Text style={styles.title} accessibilityRole="header">
+          Choose recipe for {dayLabel}
+        </Text>
+        <TextInput
+          style={styles.search}
+          value={query}
+          onChangeText={setQuery}
+          accessibilityLabel="Search recipes"
+          placeholder="Search recipes"
+          placeholderTextColor={colors.muted}
+          returnKeyType="search"
+        />
+        <FlatList
+          style={styles.flex}
+          contentContainerStyle={styles.pickerList}
+          data={results}
+          keyExtractor={(r) => r.id}
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={
+            <EmptyState text={data.recipes.length === 0 ? "No recipes yet. Create one in the Recipes tab." : `No recipes match "${query.trim()}".`} />
+          }
+          renderItem={({ item }) => (
+            <Pressable accessibilityRole="button" accessibilityLabel={`Choose ${item.title}`} onPress={() => onChoose(item.title)} style={styles.pickerRow}>
+              <Text style={styles.pickerRowTitle}>{item.title}</Text>
+            </Pressable>
+          )}
+        />
+        <Button label="Cancel" variant="plain" onPress={onCancel} accessibilityLabel="Cancel choosing recipe" />
+      </View>
+    </Modal>
+  );
+}
+
+function DinnerRow({ label, value, onSave, onChoose }: { label: string; value: string; onSave: (text: string) => void; onChoose: () => void }) {
   const [draft, setDraft] = useState(value);
+  // Follow external changes (a chosen recipe); a draft that only differs by whitespace is the user's own edit.
+  useEffect(() => {
+    setDraft((current) => (current.trim() === value ? current : value));
+  }, [value]);
   // Save on every change: Android never blurs the input when the app is left mid-edit.
   const change = (text: string) => {
     setDraft(text);
@@ -50,6 +95,7 @@ function DinnerRow({ label, value, onSave }: { label: string; value: string; onS
           </Pressable>
         )}
       </View>
+      <Button label="Choose recipe" variant="plain" onPress={onChoose} accessibilityLabel={`Choose recipe for ${label}`} />
     </View>
   );
 }
@@ -63,6 +109,12 @@ export default function HomeScreen() {
   const weekKey = dateKey(days[0]);
   const { week, year } = isoWeek(today);
   const menu = data.menus[weekKey] ?? [];
+  const [picking, setPicking] = useState<{ weekKey: string; day: number } | null>(null);
+  // A picker left open across a week rollover is dropped rather than assigning to a different week.
+  const activePick = picking !== null && picking.weekKey === weekKey ? picking : null;
+  useEffect(() => {
+    if (picking !== null && picking.weekKey !== weekKey) setPicking(null);
+  }, [picking, weekKey]);
 
   return (
     // KeyboardAvoidingView compares its in-parent frame with the on-screen keyboard, so offset by the header above it.
@@ -81,10 +133,21 @@ export default function HomeScreen() {
             label={`${DAY_NAMES[i]} ${shortDate(d)}`}
             value={menu[i] ?? ""}
             onSave={(text) => setDinner(weekKey, i, text)}
+            onChoose={() => setPicking({ weekKey, day: i })}
           />
         ))}
         <Button label="Go shopping" onPress={() => router.navigate("/shop")} />
       </ScrollView>
+      {activePick !== null && (
+        <RecipePicker
+          dayLabel={`${DAY_NAMES[activePick.day]} ${shortDate(days[activePick.day])}`}
+          onCancel={() => setPicking(null)}
+          onChoose={(title) => {
+            setDinner(activePick.weekKey, activePick.day, title);
+            setPicking(null);
+          }}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -100,4 +163,26 @@ const styles = StyleSheet.create({
   input: { flex: 1, fontSize: 16, color: colors.text, paddingVertical: 6 },
   clear: { padding: 6 },
   clearText: { fontSize: 16, color: colors.muted },
+  pickerScreen: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 12 },
+  search: {
+    fontSize: 16,
+    color: colors.text,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    minHeight: 44,
+  },
+  pickerList: { gap: 8, flexGrow: 1 },
+  pickerRow: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    minHeight: 48,
+    justifyContent: "center",
+  },
+  pickerRowTitle: { fontSize: 16, color: colors.text },
 });
