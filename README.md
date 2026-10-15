@@ -12,8 +12,9 @@ v1 is a local, single-device version of the loop:
 - **Home**: this week's dinners (ISO week, Monday–Sunday). One free-text dinner per day, saved as you type; ✕ clears it. Earlier weeks stay saved; only the current week is shown.
 - **Shopping**: add named items (duplicates are fine), tick them off as you shop, then **Finish shopping** to move the ticked items to the pantry.
 - **Pantry**: everything you've bought. Remove an entry when it's used, eaten or spoiled.
+- **Recipes**: text-only recipes (title, ingredients, steps). Search by title, open a recipe to read it, or create your own with **New recipe**. Three mock recipes come with a fresh install. No editing or deleting yet.
 
-Recipes, automatic shopping lists, quantities, accounts and sync are not in v1.
+Picking a recipe for a dinner, automatic shopping lists, quantities, accounts and sync are not in v1.
 
 ### Storage limits
 All data lives in one versioned document in AsyncStorage on this device (`localStorage` on web). There is no backup or sync: clearing app data or uninstalling deletes it. The document is version 2 and also holds text recipes (title, ingredients, steps). A fresh install, or an upgrade from a valid version 1 document, gets three mock recipes once; after that the stored recipe list is used as is, even when empty. If saved data can't be read, the app shows an error and leaves the data untouched. The Supabase client in `src/lib/supabase.ts` is not used in v1.
@@ -45,6 +46,6 @@ Before relying on a change, run `npx expo start --android` (or Expo Go on a devi
 - **Dinners**: type a dinner for a day, confirm it saves as you type and ✕ clears it; the on-screen keyboard doesn't hide the field.
 - **Shopping transfer**: add items, tick some, **Finish shopping**; ticked items move to the pantry, unticked stay.
 - **Pantry**: entries appear after shopping and can be removed.
-- **Recipes**: once the recipe feature is merged, create, search and pick a recipe for a dinner.
+- **Recipes**: search (e.g. ` PASTA `), open a recipe and go Back, create one with multiline ingredients/steps (blank fields are refused, Cancel discards), and confirm the keyboard doesn't hide the form fields. Picking a recipe for a dinner comes with the planner.
 
 iOS is unverified until an iPhone is available.

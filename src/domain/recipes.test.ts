@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 import { createPersistence, parse, serialize, STORAGE_KEY, type KeyValueStorage } from "./persist.ts";
-import { seedRecipes } from "./recipes.ts";
+import { searchRecipes, seedRecipes } from "./recipes.ts";
 import { reduce } from "./state.ts";
 import { emptyData } from "./types.ts";
 
@@ -95,6 +95,13 @@ test("malformed recipes and unknown versions are rejected and the raw document i
     await sleep(1);
     assert.equal(store.get(STORAGE_KEY), raw, label);
   }
+});
+
+test("searchRecipes matches trimmed, case-insensitive title substrings in order", () => {
+  assert.deepEqual(searchRecipes(seedRecipes, "  PASTA ").map((r) => r.title), ["Tomato pasta"]);
+  assert.deepEqual(searchRecipes(seedRecipes, "o").map((r) => r.title), ["Tomato pasta", "Vegetable soup", "Bean tacos"]);
+  assert.deepEqual(searchRecipes(seedRecipes, "nothing"), []);
+  assert.equal(searchRecipes(seedRecipes, "   "), seedRecipes);
 });
 
 test("recipe ids may match shopping or pantry ids", () => {
