@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   check: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48 },
   box: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: colors.primary, alignItems: "center", justifyContent: "center" },
   boxChecked: { backgroundColor: colors.primary },
-  tick: { color: "#FFFFFF", fontWeight: "700" },
+  tick: { color: colors.onPrimary, fontWeight: "700" },
   name: { flex: 1, fontSize: 16, color: colors.text },
   bought: { textDecorationLine: "line-through", color: colors.muted },
   footer: { padding: 16, gap: 8, borderTopWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
