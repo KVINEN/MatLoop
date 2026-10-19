@@ -3,6 +3,7 @@ import { Text } from "react-native";
 
 import { TabIcon, type TabIconName } from "@/components/TabIcon";
 import { colors } from "@/components/ui";
+import { UserMenu } from "@/components/UserMenu";
 
 const icon =
   (name: TabIconName) =>
@@ -19,7 +20,8 @@ export default function TabsLayout() {
         tabBarLabel: ({ focused, color, children }) => (
           <Text style={{ color, fontSize: 12, fontWeight: focused ? "600" : "400" }}>{children}</Text>
         ),
-        headerStyle: { backgroundColor: colors.surface },
+        headerRight: () => <UserMenu />,
+        headerStyle:{ backgroundColor: colors.surface },
         headerTitleStyle: { color: colors.text },
         sceneStyle: { backgroundColor: colors.background },
       }}
