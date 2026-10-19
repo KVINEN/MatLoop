@@ -3,15 +3,17 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useShoppingStore } from "@/store/useShoppingStore";
 
 export const colors = {
-  background: "#F7F8FA",
+  background: "#F7F7EF",
   surface: "#FFFFFF",
-  text: "#1B1F24",
-  muted: "#5F6B7A",
-  border: "#D9DEE5",
-  primary: "#1F7A4D",
-  danger: "#B42318",
-  dangerSoft: "#FEECEB",
-  successSoft: "#E7F5EC",
+  text: "#202B24",
+  muted: "#536257",
+  border: "#839083",
+  primary: "#285A3F",
+  onPrimary: "#FFFFFF",
+  activeSoft: "#DCEBCB",
+  danger: "#A52D25",
+  dangerSoft: "#FCEDE9",
+  successSoft: "#EDF4E5",
 };
 
 type ButtonProps = {
@@ -64,7 +66,7 @@ const styles = StyleSheet.create({
   plain: { backgroundColor: "transparent" },
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.75 },
-  primaryLabel: { color: "#FFFFFF", fontSize: 16, fontWeight: "600" },
+  primaryLabel: { color: colors.onPrimary, fontSize: 16, fontWeight: "600" },
   plainLabel: { color: colors.primary, fontSize: 16, fontWeight: "600" },
   banner: {
     flexDirection: "row",
