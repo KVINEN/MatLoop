@@ -15,7 +15,13 @@ export type TabIconName = keyof typeof sources;
 /** Decorative outline icon; the parent tab supplies the accessible label and selected state. */
 export function TabIcon({ name, focused, size }: { name: TabIconName; focused: boolean; size: number }) {
   return (
-    <View style={[styles.circle, focused && styles.active]} accessible={false}>
+    <View
+      style={[styles.circle, focused && styles.active]}
+      accessible={false}
+      aria-hidden
+      importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
+    >
       <Image
         source={sources[name]}
         contentFit="contain"
