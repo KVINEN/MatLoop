@@ -87,6 +87,7 @@ export function UserMenu() {
         accessibilityRole="button"
         accessibilityLabel="Open user menu"
         accessibilityState={{ expanded: open }}
+        aria-expanded={open}
         onPress={() => setOpen(true)}
         style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}
       >
